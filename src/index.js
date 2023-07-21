@@ -1,8 +1,10 @@
 import express from 'express';
 import expressWs from 'express-ws';
 import postgres from 'postgres';
-import {BASE_URL, DISCORD_CLIENT_ID, HTTP_PORT, IMAGES_DIRECTORY, POSTGRES_CONNECTION_URI} from './constants.js';
+import {KEY, CERT, BASE_URL, DISCORD_CLIENT_ID, HTTP_PORT, IMAGES_DIRECTORY, POSTGRES_CONNECTION_URI} from './constants.js';
 const app = express();
+import * as fs from 'fs';
+import * as https from 'https';
 
 const chief = {
     clients: new Map(),
@@ -39,7 +41,6 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS offset_x INTEGER NOT NULL DEFAULT -5
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS offset_y INTEGER NOT NULL DEFAULT -500;
 `);
 
-expressWs(app);
 app.use('/api', (await import('./api/index.js')).default);
 app.use('/artist', (await import('./artist/index.js')).default);
 app.use('/metrics', (await import('./metrics/index.js')).default);
@@ -47,7 +48,6 @@ app.use('/oauth/login', (req, res) => {
     res.redirect(`https://discord.com/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(`${BASE_URL}/artist/createorder`)}&scope=identify+guilds.members.read&response_type=code`);
 });
 app.use('/template', (await import('./template/index.js')).default);
-app.use('/ws', (await import('./ws/index.js')).default);
 
 app.use('/orders', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -56,6 +56,14 @@ app.use('/orders', (req, res, next) => {
 app.use('/orders', express.static(IMAGES_DIRECTORY));
 app.use('/', express.static('./web'))
 
-app.listen(HTTP_PORT, () => {
-    console.log(`Serving requests on port ${HTTP_PORT}!`);
+const server = https.createServer({
+	key: fs.readFileSync(KEY),
+	cert: fs.readFileSync(CERT)
+}, app);
+server.listen(HTTP_PORT, () => {
+console.log("app test")
+	console.log(`Serving requests on port ${HTTP_PORT}!`);
 });
+expressWs(app, server);
+
+app.use('/ws', (await import('./ws/index.js')).default);

@@ -74,6 +74,7 @@ router.post('/order', upload.fields([{
         body: tokenParams
     });
     const tokenData = await tokenResponse.json();
+    console.log(tokenData);
     if (!tokenResponse.ok || !tokenData.access_token) {
         res.type('text/plain').send('Invalid Discord authentication code! It may have expired.');
         next();
