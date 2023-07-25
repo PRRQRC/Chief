@@ -20,7 +20,7 @@ router.get('/osuplace', async (req, res) => {
                     `${BASE_URL}/orders/${order.id}.png`
                 ],
                 x: order.offset_x,
-                y: oder.offset_y
+                y: order.offset_y
             }
         ] : []
     });
